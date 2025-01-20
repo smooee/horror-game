@@ -2,7 +2,8 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public float speed = 5f; // Movement speed
+    public float speed = 5f; // Walking speed
+    public float sprintMultiplier = 2f; // Sprint speed multiplier
     public float sensitivity = 2f; // Mouse sensitivity
 
     private CharacterController controller;
@@ -15,10 +16,13 @@ public class PlayerMovement : MonoBehaviour
     private float bobTimer = 0f;
 
     // Footstep audio
-    public AudioClip footstepAudio; // Assign the 52-second MP3 file here
-    public float stepDuration = 0.5f; // Time between steps (adjust to walking pace)
-    private float footstepTimer = 0f;
+    public AudioClip grassFootsteps;  // Footstep audio for grass
+    public AudioClip hardwoodFootsteps;  // Footstep audio for hardwood
     private AudioSource audioSource;
+
+    // Layer masks for surface detection
+    public LayerMask grassLayer;
+    public LayerMask hardwoodLayer;
 
     void Start()
     {
@@ -29,13 +33,23 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // Movement
+        // Movement Input
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
-        Vector3 move = transform.right * x + transform.forward * z;
-        controller.Move(move * speed * Time.deltaTime);
 
-        // Gravity
+        // Check if player is sprinting
+        bool isSprinting = Input.GetKey(KeyCode.LeftShift) && z > 0;
+
+        // Determine current speed
+        float currentSpeed = isSprinting ? speed * sprintMultiplier : speed;
+
+        // Calculate movement direction
+        Vector3 move = transform.right * x + transform.forward * z;
+
+        // Move the player
+        controller.Move(move * currentSpeed * Time.deltaTime);
+
+        // Apply gravity
         if (!controller.isGrounded)
             velocity.y += Physics.gravity.y * Time.deltaTime;
         else
@@ -52,34 +66,61 @@ public class PlayerMovement : MonoBehaviour
         cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         transform.Rotate(Vector3.up * mouseX);
 
-        // Footstep handling
-        PlayFootstep();
+        // Handle footstep audio
+        HandleFootstepAudio(z > 0, isSprinting);
     }
 
-    void PlayFootstep()
+    void HandleFootstepAudio(bool isMoving, bool isSprinting)
     {
-        if (controller.isGrounded && (Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0))
+        if (isMoving)
         {
-            footstepTimer += Time.deltaTime;
-            bobTimer += Time.deltaTime * bobSpeed; // Increment bob timer
+            // Detect the surface the player is on
+            Ray ray = new Ray(transform.position, Vector3.down);
+            RaycastHit hit;
 
-            // Apply bobbing to camera
-            float bobOffset = Mathf.Sin(bobTimer) * bobAmount;
-            cameraTransform.localPosition = new Vector3(0, 1 + bobOffset, 0);
-
-            if (footstepTimer >= stepDuration)
+            if (Physics.Raycast(ray, out hit, 1.5f))
             {
-                // Play a random section of the MP3
-                audioSource.time = Random.Range(0, footstepAudio.length - 1f); // Randomize start time
-                audioSource.PlayOneShot(footstepAudio, 0.7f); // Slightly lower volume
-                footstepTimer = 0f;
+                if (IsInLayerMask(hit.collider.gameObject, grassLayer))
+                {
+                    // If the audio clip is not already set to grass footsteps, change it
+                    if (audioSource.clip != grassFootsteps)
+                    {
+                        audioSource.clip = grassFootsteps;
+                        audioSource.Play(); // Restart the audio
+                    }
+                }
+                else if (IsInLayerMask(hit.collider.gameObject, hardwoodLayer))
+                {
+                    // If the audio clip is not already set to hardwood footsteps, change it
+                    if (audioSource.clip != hardwoodFootsteps)
+                    {
+                        audioSource.clip = hardwoodFootsteps;
+                        audioSource.Play(); // Restart the audio
+                    }
+                }
+
+                //sprinting speed : walking speed (for audios)
+                audioSource.pitch = isSprinting ? 1.7f : 1.2f;
+            }
+
+            // If the audio is not already playing, start it
+            if (!audioSource.isPlaying)
+            {
+                audioSource.Play();
             }
         }
         else
         {
-            // Reset bobbing when not moving
-            cameraTransform.localPosition = new Vector3(0, 1, 0);
-            bobTimer = 0f;
+            // Stop the audio when the player stops moving
+            if (audioSource.isPlaying)
+            {
+                audioSource.Stop();
+            }
         }
+    }
+
+    bool IsInLayerMask(GameObject obj, LayerMask layerMask)
+    {
+        return (layerMask.value & (1 << obj.layer)) > 0;
     }
 }
