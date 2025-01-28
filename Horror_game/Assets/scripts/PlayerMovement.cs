@@ -11,9 +11,6 @@ public class PlayerMovement : MonoBehaviour
     private float xRotation = 0f;
 
     public Transform cameraTransform; // Player's camera
-    public float bobAmount = 0.05f; // Camera bobbing height
-    public float bobSpeed = 6f; // Camera bobbing speed
-    private float bobTimer = 0f;
 
     // Footstep audio
     public AudioClip grassFootsteps;  // Footstep audio for grass
@@ -24,6 +21,9 @@ public class PlayerMovement : MonoBehaviour
     public LayerMask grassLayer;
     public LayerMask hardwoodLayer;
 
+    // Raycast settings
+    public float raycastDistance = 5f; // Maximum distance for the raycast
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -33,30 +33,36 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // Movement Input
+        // Handle movement and mouse look
+        HandleMovement();
+        HandleMouseLook();
+
+        // Interact with doors
+        if (Input.GetKeyDown(KeyCode.E)) InteractWithDoor();
+
+        // Handle footstep audio
+        HandleFootstepAudio(Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0, Input.GetKey(KeyCode.LeftShift));
+    }
+
+    void HandleMovement()
+    {
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
 
-        // Check if player is sprinting
         bool isSprinting = Input.GetKey(KeyCode.LeftShift) && z > 0;
-
-        // Determine current speed
         float currentSpeed = isSprinting ? speed * sprintMultiplier : speed;
 
-        // Calculate movement direction
         Vector3 move = transform.right * x + transform.forward * z;
-
-        // Move the player
         controller.Move(move * currentSpeed * Time.deltaTime);
 
-        // Apply gravity
-        if (!controller.isGrounded)
-            velocity.y += Physics.gravity.y * Time.deltaTime;
-        else
-            velocity.y = 0;
-        controller.Move(velocity * Time.deltaTime);
+        if (!controller.isGrounded) velocity.y += Physics.gravity.y * Time.deltaTime;
+        else velocity.y = 0;
 
-        // Mouse Look
+        controller.Move(velocity * Time.deltaTime);
+    }
+
+    void HandleMouseLook()
+    {
         float mouseX = Input.GetAxis("Mouse X") * sensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * sensitivity;
 
@@ -65,9 +71,6 @@ public class PlayerMovement : MonoBehaviour
 
         cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         transform.Rotate(Vector3.up * mouseX);
-
-        // Handle footstep audio
-        HandleFootstepAudio(z > 0, isSprinting);
     }
 
     void HandleFootstepAudio(bool isMoving, bool isSprinting)
@@ -99,8 +102,8 @@ public class PlayerMovement : MonoBehaviour
                     }
                 }
 
-                //sprinting speed : walking speed (for audios)
-                audioSource.pitch = isSprinting ? 1.7f : 1.2f;
+                // Adjust pitch for sprinting
+                audioSource.pitch = isSprinting ? 1.8f : 1.2f;
             }
 
             // If the audio is not already playing, start it
@@ -115,6 +118,18 @@ public class PlayerMovement : MonoBehaviour
             if (audioSource.isPlaying)
             {
                 audioSource.Stop();
+            }
+        }
+    }
+
+    void InteractWithDoor()
+    {
+        if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, raycastDistance))
+        {
+            if (hit.collider.CompareTag("door"))
+            {
+                doorBehaviour door = hit.collider.GetComponentInParent<doorBehaviour>();
+                door?.ToggleDoor();
             }
         }
     }
