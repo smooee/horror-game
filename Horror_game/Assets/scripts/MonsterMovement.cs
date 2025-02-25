@@ -1,31 +1,33 @@
-using System.Collections;
 using UnityEngine;
+using System.Collections;
 
 public class MonsterMovement : MonoBehaviour
 {
-    public float moveSpeed = 5f; // Adjust speed in the Inspector
-    public Transform startPoint; // The left side of the window
-    public Transform endPoint;   // The right side of the window
-
+    public float moveSpeed = 5f;
+    public Transform startPoint;
+    public Transform endPoint;
     private bool isRunning = false;
+
+    public AudioClip monsterSound;
+    private AudioSource audioSource;
 
     void Start()
     {
-        transform.position = startPoint.position; // Start at the left side
+        transform.position = startPoint.position;
         gameObject.SetActive(false);
+        audioSource = GetComponent<AudioSource>();
     }
 
     void Update()
     {
         if (isRunning)
         {
-            gameObject.SetActive(true);
             transform.position = Vector3.MoveTowards(transform.position, endPoint.position, moveSpeed * Time.deltaTime);
 
-            // Stop moving once it reaches the end
             if (Vector3.Distance(transform.position, endPoint.position) < 0.1f)
             {
-                gameObject.SetActive(false); // Hide the monster after crossing
+                StartCoroutine(DisableAfterSound()); // Wait for sound before disabling
+                isRunning = false;
             }
         }
     }
@@ -33,5 +35,21 @@ public class MonsterMovement : MonoBehaviour
     public void StartRunning()
     {
         isRunning = true;
+
+        if (audioSource != null && monsterSound != null)
+        {
+            audioSource.PlayOneShot(monsterSound);
+        }
+    }
+
+    IEnumerator DisableAfterSound()
+    {
+        // Wait until the sound finishes playing
+        if (audioSource.isPlaying)
+        {
+            yield return new WaitForSeconds(monsterSound.length);
+        }
+
+        gameObject.SetActive(false); // Disable the monster **after** the sound ends
     }
 }

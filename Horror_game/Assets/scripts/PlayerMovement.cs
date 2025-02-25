@@ -55,6 +55,14 @@ public class PlayerMovement : MonoBehaviour
         // Interact with doors
         if (Input.GetKeyDown(KeyCode.E)) InteractWithDoor();
 
+
+         // Debug Key: Press "L" to trigger the monster
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            StartCoroutine(TriggerMonsterRun());
+        }    
+
+
         // Handle footstep audio
         HandleFootstepAudio(Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0, Input.GetKey(KeyCode.LeftShift));
     }
@@ -119,7 +127,7 @@ public class PlayerMovement : MonoBehaviour
 
     IEnumerator TriggerMonsterRun()
     {
-        yield return new WaitForSeconds(2f); // Wait 2 seconds
+        yield return new WaitForSeconds(1.5f); // Wait 2 seconds
 
         monsterObject.SetActive(true); // Make monster visible
         monsterAnimator.SetTrigger("RunAcross"); // Play running animation
