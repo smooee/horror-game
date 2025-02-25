@@ -1,4 +1,7 @@
 using UnityEngine;
+using TMPro;
+using System.Collections;
+
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -24,6 +27,16 @@ public class PlayerMovement : MonoBehaviour
     // Raycast settings
     public float raycastDistance = 5f; // Maximum distance for the raycast
 
+    public TMP_Text interactionText;
+    public TMP_Text StoryText;
+    private bool visText = true;
+
+    private bool hasBattery = false; // Tracks if the player has picked up the battery
+
+    public GameObject monsterObject; // The monster GameObject
+    public Animator monsterAnimator; // The Animator for the monster
+
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -33,6 +46,8 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        HandleInteractionRaycast();
+
         // Handle movement and mouse look
         HandleMovement();
         HandleMouseLook();
@@ -43,6 +58,74 @@ public class PlayerMovement : MonoBehaviour
         // Handle footstep audio
         HandleFootstepAudio(Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0, Input.GetKey(KeyCode.LeftShift));
     }
+
+    void HandleInteractionRaycast()
+    {
+        
+        if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, raycastDistance))
+        {
+            if (hit.collider.CompareTag("Radio"))
+            {
+                if (visText) 
+                {
+                    interactionText.text = "Press [E] to turn on radio";
+                }
+
+                if (Input.GetKeyDown(KeyCode.E) && visText)
+                {
+                    if (hasBattery)
+                    {
+                        StoryText.text = "The radio crackles to life..."; // Replace "test" with actual radio text
+                        StartCoroutine(TriggerMonsterRun());
+                    }
+                    else
+                    {
+                        StoryText.text = "Missing battery. Search the shed for a battery."; 
+                    }
+                    interactionText.text = "";
+                    visText = false;
+                }
+            }
+
+            else if (hit.collider.CompareTag("Battery")) // Battery Interaction
+            {
+                interactionText.text = "Press [E] to pick up battery";
+
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    StoryText.text = "Fix the Radio";
+                    visText = true; 
+                    hasBattery = true; 
+                    interactionText.text = ""; 
+                    hit.collider.gameObject.SetActive(false); 
+                }
+            }
+
+            else if (hit.collider.CompareTag("door"))
+            {
+                interactionText.text = "Press [E] to interact";
+            }
+            else
+            {
+                interactionText.text = "";
+            }
+        }
+        else
+        {
+            interactionText.text = "";
+        }
+    }
+
+
+    IEnumerator TriggerMonsterRun()
+    {
+        yield return new WaitForSeconds(2f); // Wait 2 seconds
+
+        monsterObject.SetActive(true); // Make monster visible
+        monsterAnimator.SetTrigger("RunAcross"); // Play running animation
+        monsterObject.GetComponent<MonsterMovement>().StartRunning(); // Start movement
+    }
+
 
     void HandleMovement()
     {
