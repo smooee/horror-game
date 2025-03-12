@@ -35,6 +35,7 @@ public class PlayerMovement : MonoBehaviour
 
     public GameObject monsterObject; // The monster GameObject
     public Animator monsterAnimator; // The Animator for the monster
+    public AudioSource electricBoxAudio;
 
 
     void Start()
@@ -85,6 +86,7 @@ public class PlayerMovement : MonoBehaviour
                     {
                         StoryText.text = "The radio crackles to life..."; // Replace "test" with actual radio text
                         StartCoroutine(TriggerMonsterRun());
+                        StartCoroutine(DelayedFlicker());
                     }
                     else
                     {
@@ -132,6 +134,23 @@ public class PlayerMovement : MonoBehaviour
         monsterObject.SetActive(true); // Make monster visible
         monsterAnimator.SetTrigger("RunAcross"); // Play running animation
         monsterObject.GetComponent<MonsterMovement>().StartRunning(); // Start movement
+    }
+
+    
+    IEnumerator DelayedFlicker()
+    {
+        yield return new WaitForSeconds(7f); // Wait 3 seconds
+
+        // Play electrical surge sound from the electric box
+        if (electricBoxAudio != null)
+        {
+            electricBoxAudio.Play();
+        }
+
+        yield return new WaitForSeconds(2f); // Wait a bit for sound to play before flickering
+
+        // Start flickering lights
+        FindObjectOfType<LightsFlicker>().StartFlickerSequence();
     }
 
 

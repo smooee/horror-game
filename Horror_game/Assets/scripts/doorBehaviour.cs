@@ -39,7 +39,7 @@ public class doorBehaviour : MonoBehaviour
 
     if (!isOpen) // If the door is opening, start auto-close timer
     {
-        StartCoroutine(AutoCloseDoor());
+        //StartCoroutine(AutoCloseDoor());
     }
 
     isOpen = !isOpen;
