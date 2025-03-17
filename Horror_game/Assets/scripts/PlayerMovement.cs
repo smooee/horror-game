@@ -37,6 +37,7 @@ public class PlayerMovement : MonoBehaviour
     public Animator monsterAnimator; // The Animator for the monster
     public AudioSource electricBoxAudio;
 
+    public AudioSource radioAudio;
 
     void Start()
     {
@@ -84,7 +85,8 @@ public class PlayerMovement : MonoBehaviour
                 {
                     if (hasBattery)
                     {
-                        StoryText.text = "The radio crackles to life..."; // Replace "test" with actual radio text
+                        StoryText.text = ""; // Replace "test" with actual radio text
+                        radioAudio.Play();
                         StartCoroutine(TriggerMonsterRun());
                         StartCoroutine(DelayedFlicker());
                     }
@@ -126,6 +128,11 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    IEnumerator LockDoorsTask()
+    {
+        yield return new WaitForSeconds(2f); // Small delay for realism
+        StoryText.text = "Lock the doors before going to bed.";
+    }
 
     IEnumerator TriggerMonsterRun()
     {
@@ -149,6 +156,7 @@ public class PlayerMovement : MonoBehaviour
 
         yield return new WaitForSeconds(2f); // Wait a bit for sound to play before flickering
 
+        StoryText.text = "Turn on flash light [T]";
         // Start flickering lights
         FindObjectOfType<LightsFlicker>().StartFlickerSequence();
     }
