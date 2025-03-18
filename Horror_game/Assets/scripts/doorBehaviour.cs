@@ -10,7 +10,7 @@ public class doorBehaviour : MonoBehaviour
     public AudioClip creakSound;
     public AudioClip shutSound;
 
-    private bool isOpen = false;
+    public bool isOpen = false;
     private bool isMoving = false;
 
     public bool reverseSwing = false; // Set this to true in the Inspector for doors that should open the other way
@@ -18,6 +18,8 @@ public class doorBehaviour : MonoBehaviour
     private Quaternion openRotation;
     private Quaternion closedRotation;
     private AudioSource audioSource;
+
+    public bool isLocked = false;
 
     void Start()
     {
@@ -29,32 +31,46 @@ public class doorBehaviour : MonoBehaviour
     }
 
     public void ToggleDoor()
-{
-    if (isMoving) return;
-
-    Quaternion targetRotation = isOpen ? closedRotation : 
-        (reverseSwing ? Quaternion.Euler(transform.rotation.eulerAngles.x, -openYRotation, transform.rotation.eulerAngles.z) : openRotation);
-
-    StartCoroutine(MoveDoor(targetRotation, isOpen ? closeDuration : openDuration, isOpen ? shutSound : openSound, isOpen ? null : creakSound));
-
-    if (!isOpen) // If the door is opening, start auto-close timer
     {
-        //StartCoroutine(AutoCloseDoor());
+        if (isMoving) return;
+
+        if (isLocked)
+        {
+            Debug.Log("Door is locked! Cannot open.");
+            return;
+        }
+
+        Quaternion targetRotation = isOpen ? closedRotation : 
+            (reverseSwing ? Quaternion.Euler(transform.rotation.eulerAngles.x, -openYRotation, transform.rotation.eulerAngles.z) : openRotation);
+
+        StartCoroutine(MoveDoor(targetRotation, isOpen ? closeDuration : openDuration, isOpen ? shutSound : openSound, isOpen ? null : creakSound));
+
+        isOpen = !isOpen;
     }
 
-    isOpen = !isOpen;
-}
 
-// Coroutine to close the door automatically after 1.5 seconds
-private System.Collections.IEnumerator AutoCloseDoor()
+
+    public void ToggleLock()
 {
-    yield return new WaitForSeconds(openDuration + 1.5f); // Ensures door fully opens before countdown
-
-    if (isOpen && !isMoving) // Only close if door is still open
+    if (!isLocked) // 🚨 Only allow locking, no unlocking
     {
-        ToggleDoor(); // Close the door
+        isLocked = true;
+        Debug.Log("Door is now LOCKED.");
     }
 }
+
+
+
+    // Coroutine to close the door automatically after 1.5 seconds
+    private System.Collections.IEnumerator AutoCloseDoor()
+    {
+        yield return new WaitForSeconds(openDuration + 1.5f); // Ensures door fully opens before countdown
+
+        if (isOpen && !isMoving) // Only close if door is still open
+        {
+            ToggleDoor(); // Close the door
+        }
+    }
 
 
     private System.Collections.IEnumerator MoveDoor(Quaternion targetRotation, float duration, AudioClip startSound, AudioClip extraSound = null)

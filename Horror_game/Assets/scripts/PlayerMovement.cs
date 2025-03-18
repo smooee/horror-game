@@ -26,7 +26,6 @@ public class PlayerMovement : MonoBehaviour
 
     // Raycast settings
     public float raycastDistance = 5f; // Maximum distance for the raycast
-
     public TMP_Text interactionText;
     public TMP_Text StoryText;
     private bool visText = true;
@@ -38,6 +37,9 @@ public class PlayerMovement : MonoBehaviour
     public AudioSource electricBoxAudio;
 
     public AudioSource radioAudio;
+
+    private bool canLockDoor = false; // 🚨 NEW: This controls when locking is allowed
+private bool doorLocked = false;
 
     void Start()
     {
@@ -69,57 +71,80 @@ public class PlayerMovement : MonoBehaviour
         HandleFootstepAudio(Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0, Input.GetKey(KeyCode.LeftShift));
     }
 
-    void HandleInteractionRaycast()
+void HandleInteractionRaycast()
+{
+    if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, raycastDistance))
     {
-        
-        if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, raycastDistance))
+        if (hit.collider.CompareTag("Radio"))
         {
-            if (hit.collider.CompareTag("Radio"))
+            if (visText) 
             {
-                if (visText) 
-                {
-                    interactionText.text = "Press [E] to turn on radio";
-                }
-
-                if (Input.GetKeyDown(KeyCode.E) && visText)
-                {
-                    if (hasBattery)
-                    {
-                        StoryText.text = ""; // Replace "test" with actual radio text
-                        radioAudio.Play();
-                        StartCoroutine(TriggerMonsterRun());
-                        StartCoroutine(DelayedFlicker());
-                    }
-                    else
-                    {
-                        StoryText.text = "Missing battery. Search the shed for a battery."; 
-                    }
-                    interactionText.text = "";
-                    visText = false;
-                }
+                interactionText.text = "Press [E] to turn on radio";
             }
 
-            else if (hit.collider.CompareTag("Battery")) // Battery Interaction
+            if (Input.GetKeyDown(KeyCode.E) && visText)
             {
-                interactionText.text = "Press [E] to pick up battery";
+                if (hasBattery)
+                {
+                    StoryText.text = ""; // Clear previous story text
+                    radioAudio.Play();
+                    //StartCoroutine(TriggerMonsterRun());
+                    //StartCoroutine(DelayedFlicker());
+
+                    // 🚨 Unlock door locking feature once the radio is finished playing
+                    StartCoroutine(EnableDoorLockingAfterRadio());
+                }
+                else
+                {
+                    StoryText.text = "Missing battery. Search the shed for a battery."; 
+                }
+                interactionText.text = "";
+                visText = false;
+            }
+        }
+
+        else if (hit.collider.CompareTag("Battery")) // Battery Interaction
+        {
+            interactionText.text = "Press [E] to pick up battery";
+
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                StoryText.text = "Fix the Radio";
+                visText = true; 
+                hasBattery = true; 
+                interactionText.text = ""; 
+                hit.collider.gameObject.SetActive(false); 
+            }
+        }
+
+        else if (hit.collider.CompareTag("door"))
+        {
+            doorBehaviour door = hit.collider.GetComponentInParent<doorBehaviour>();  
+
+            if (door != null)
+            {
+                interactionText.text = "Press [E] to open the door";
 
                 if (Input.GetKeyDown(KeyCode.E))
                 {
-                    StoryText.text = "Fix the Radio";
-                    visText = true; 
-                    hasBattery = true; 
-                    interactionText.text = ""; 
-                    hit.collider.gameObject.SetActive(false); 
+                    door.ToggleDoor();
                 }
-            }
 
-            else if (hit.collider.CompareTag("door"))
-            {
-                interactionText.text = "Press [E] to interact";
-            }
-            else
-            {
-                interactionText.text = "";
+                // 🚨 Only show the lock option after the radio has played and if the door is closed
+                if (canLockDoor && !door.isOpen && !doorLocked)
+                {
+                    interactionText.text += "\nPress [F] to LOCK the door"; 
+
+                    if (Input.GetKeyDown(KeyCode.F))
+                    {
+                        door.ToggleLock();
+                        doorLocked = true;
+                        interactionText.text = ""; // Remove the option after locking
+
+                        // 🚨 New Story Progression: Guide player to the next task
+                        StoryText.text = "Get ready for bed in the toilet";
+                    }
+                }
             }
         }
         else
@@ -127,6 +152,19 @@ public class PlayerMovement : MonoBehaviour
             interactionText.text = "";
         }
     }
+    else
+    {
+        interactionText.text = "";
+    }
+}
+
+// 🚨 New Coroutine: Unlocks door locking after the radio plays
+IEnumerator EnableDoorLockingAfterRadio()
+{
+    yield return new WaitForSeconds(radioAudio.clip.length); // Wait for the radio to finish
+    canLockDoor = true;
+    StoryText.text = "Lock the door"; // Prompt player to lock the door
+}
 
     IEnumerator LockDoorsTask()
     {
