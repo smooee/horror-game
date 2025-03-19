@@ -8,9 +8,14 @@ public class ButtonNav : MonoBehaviour
         SceneManager.LoadScene("Main"); 
     }
 
+    public void MainMenu()
+    {
+        SceneManager.LoadScene("StartMenu");
+    }
+
     public void OpenSettings()
     {
-        SceneManager.LoadScene("Settings"); 
+        SceneManager.LoadScene("Options"); 
     }
 
     public void QuitGame()
