@@ -39,7 +39,9 @@ public class PlayerMovement : MonoBehaviour
     public AudioSource radioAudio;
 
     private bool canLockDoor = false; // 🚨 NEW: This controls when locking is allowed
-private bool doorLocked = false;
+    private bool doorLocked = false;
+
+    public bool windowScare = false;
 
     void Start()
     {
@@ -142,7 +144,8 @@ void HandleInteractionRaycast()
                         interactionText.text = ""; // Remove the option after locking
 
                         // 🚨 New Story Progression: Guide player to the next task
-                        StoryText.text = "Get ready for bed in the toilet";
+                        StoryText.text = "Get ready for bed";
+                        windowScare = true;
                     }
                 }
             }
@@ -158,6 +161,16 @@ void HandleInteractionRaycast()
     }
 }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if(windowScare)
+        {
+            StartCoroutine(TriggerMonsterRun());
+            StartCoroutine(DelayedFlicker());
+            windowScare = false;
+        }
+    }
+
 // 🚨 New Coroutine: Unlocks door locking after the radio plays
 IEnumerator EnableDoorLockingAfterRadio()
 {
@@ -169,12 +182,12 @@ IEnumerator EnableDoorLockingAfterRadio()
     IEnumerator LockDoorsTask()
     {
         yield return new WaitForSeconds(2f); // Small delay for realism
-        StoryText.text = "Lock the doors before going to bed.";
+        StoryText.text = "Lock the doors before going to bed";
     }
 
     IEnumerator TriggerMonsterRun()
     {
-        yield return new WaitForSeconds(1.5f); // Wait 2 seconds
+        yield return new WaitForSeconds(0.5f); // Wait 2 seconds
 
         monsterObject.SetActive(true); // Make monster visible
         monsterAnimator.SetTrigger("RunAcross"); // Play running animation

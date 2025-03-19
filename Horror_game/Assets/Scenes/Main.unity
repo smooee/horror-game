@@ -1461,6 +1461,24 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.11157316, y: 0.19910346, z: 0.11157316}
   m_Center: {x: -0.0000000018626451, y: 0, z: 0}
+--- !u!1 &406129654 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1774811779915186, guid: eef8306c54f201a4e8cd536d25207e32, type: 3}
+  m_PrefabInstance: {fileID: 1282210198}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &406129656
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 406129654}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 3.1302223, y: 1, z: 1.2067745}
+  m_Center: {x: 1.0651115, y: 0, z: -1.369451}
 --- !u!1001 &425854077
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6074,6 +6092,7 @@ MonoBehaviour:
   monsterAnimator: {fileID: 723271830}
   electricBoxAudio: {fileID: 559149951}
   radioAudio: {fileID: 2106922776}
+  windowScare: 0
 --- !u!136 &1723503896
 CapsuleCollider:
   m_ObjectHideFlags: 0
