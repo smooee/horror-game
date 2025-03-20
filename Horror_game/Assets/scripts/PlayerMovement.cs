@@ -43,6 +43,9 @@ public class PlayerMovement : MonoBehaviour
 
     public bool windowScare = false;
 
+    public bool powerBoxBroken = false;
+    public GameObject sparksEffect;
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -118,38 +121,76 @@ void HandleInteractionRaycast()
                 hit.collider.gameObject.SetActive(false); 
             }
         }
+        
+        else if (hit.collider.CompareTag("PowerBox") && powerBoxBroken) // Fixing the power box
+        {
+            interactionText.text = "Press [E] to fix the power box";
+
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                powerBoxBroken = false;
+                StoryText.text = "Power restored!";
+                interactionText.text = "";
+
+                // 🚨 Deactivate sparks effect
+                if (sparksEffect != null)
+                {
+                    sparksEffect.SetActive(false);
+                }
+            }
+        }
+
 
         else if (hit.collider.CompareTag("door"))
         {
-            doorBehaviour door = hit.collider.GetComponentInParent<doorBehaviour>();  
+            doorBehaviour door = hit.collider.GetComponentInParent<doorBehaviour>();
 
             if (door != null)
             {
+                // Normal door interaction
                 interactionText.text = "Press [E] to open the door";
 
                 if (Input.GetKeyDown(KeyCode.E))
                 {
-                    door.ToggleDoor();
+                    if (!doorLocked) // Only open if not locked
+                    {
+                        door.ToggleDoor();
+                    }
+                    else
+                    {
+                        StoryText.text = "The door is locked!";
+                    }
                 }
 
-                // 🚨 Only show the lock option after the radio has played and if the door is closed
+                // 🚨 Locking the door option (only before power goes out)
                 if (canLockDoor && !door.isOpen && !doorLocked)
                 {
-                    interactionText.text += "\nPress [F] to LOCK the door"; 
+                    interactionText.text += "\nPress [F] to LOCK the door";
 
                     if (Input.GetKeyDown(KeyCode.F))
                     {
                         door.ToggleLock();
                         doorLocked = true;
-                        interactionText.text = ""; // Remove the option after locking
-
-                        // 🚨 New Story Progression: Guide player to the next task
-                        StoryText.text = "Get ready for bed";
+                        interactionText.text = "";
+                        StoryText.text = "Get ready for bed"; // Next objective
                         windowScare = true;
+                    }
+                }
+
+                // 🚨 Unlock the door ONLY AFTER power is fixed
+                if (powerBoxBroken && doorLocked)
+                {
+                    interactionText.text += "\nPress [F] to unlock the door";
+
+                    if (Input.GetKeyDown(KeyCode.f))
+                    {
+                        doorLocked = false;
+                        StoryText.text = "The door is now unlocked.";
                     }
                 }
             }
         }
+
         else
         {
             interactionText.text = "";
@@ -205,9 +246,15 @@ IEnumerator EnableDoorLockingAfterRadio()
             electricBoxAudio.Play();
         }
 
-        yield return new WaitForSeconds(2f); // Wait a bit for sound to play before flickering
+        yield return new WaitForSeconds(5f); // Wait a bit for sound to play before flickering
 
         StoryText.text = "Turn on flash light [T]";
+
+        sparksEffect.SetActive(true);
+
+        powerBoxBroken = true;
+
+
         // Start flickering lights
         FindObjectOfType<LightsFlicker>().StartFlickerSequence();
     }
