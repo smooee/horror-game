@@ -5,7 +5,7 @@ public class ButtonNav : MonoBehaviour
 
     public void PlayGame()
     {
-        SceneManager.LoadScene("Main"); 
+        SceneManager.LoadScene("LoreScene"); 
     }
 
     public void MainMenu()

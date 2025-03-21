@@ -34,12 +34,7 @@ public class doorBehaviour : MonoBehaviour
     {
         if (isMoving) return;
 
-        if (isLocked)
-        {
-            Debug.Log("Door is locked! Cannot open.");
-            return;
-        }
-
+        
         Quaternion targetRotation = isOpen ? closedRotation : 
             (reverseSwing ? Quaternion.Euler(transform.rotation.eulerAngles.x, -openYRotation, transform.rotation.eulerAngles.z) : openRotation);
 
@@ -55,7 +50,7 @@ public class doorBehaviour : MonoBehaviour
     if (!isLocked) // 🚨 Only allow locking, no unlocking
     {
         isLocked = true;
-        Debug.Log("Door is now LOCKED.");
+        
     }
 }
 

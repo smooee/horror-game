@@ -2071,7 +2071,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 8300000, guid: ffbf0ff1272bf4b43b7e4ff7560fc514, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 0.31
+  m_Volume: 0.72
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -2155,6 +2155,19 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!65 &559149952
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 559149948}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1.0405316, y: 0.22877026, z: 1.5578151}
+  m_Center: {x: -0.2593032, y: 0.27105018, z: 0.052718997}
 --- !u!1 &562642034
 GameObject:
   m_ObjectHideFlags: 0
@@ -11022,6 +11035,7 @@ MonoBehaviour:
   raycastDistance: 3
   interactionText: {fileID: 1853511544}
   StoryText: {fileID: 51354304}
+  hasBattery: 1
   monsterObject: {fileID: 723271829}
   monsterAnimator: {fileID: 723271830}
   electricBoxAudio: {fileID: 559149951}
@@ -11029,6 +11043,7 @@ MonoBehaviour:
   windowScare: 0
   powerBoxBroken: 0
   sparksEffect: {fileID: 803374085}
+  AllTheLights: {fileID: 194736508}
 --- !u!136 &1723503896
 CapsuleCollider:
   m_ObjectHideFlags: 0
