@@ -5,19 +5,15 @@ using UnityEngine.SceneManagement;
 
 public class LoreManager : MonoBehaviour
 {
-    public TextMeshProUGUI loreText; // Drag your TextMeshPro text here
-    public float fadeDuration = 1.5f; // How long each text fades in
-    public float delayBetweenLines = 2f; // Delay before next line starts
+    public TextMeshProUGUI[] textBlocks; // Assign each TextMeshPro block in order
+    public float fadeDuration = 1.5f;    // Duration for fading in each block
+    public float delayBetweenLines = 2f; // Delay before fading the next block
 
     private string[] loreLines = {
-        "The night is cold... the wind whispers secrets through the cracks in the walls.",
-        "This house... something is off. It doesn’t feel empty, even when you're alone.",
-        "Every creak in the floorboards feels... deliberate. Like something is watching.",
-        "Maybe it's just your mind playing tricks on you... but you swear, you heard breathing last night.",
-        "Tonight... you need answers."
+        "The news mentioned something bizarre — a supposed ‘alien landing’ occured nearby",
+        "The government are not willing to share any information",
+        "Could this be just another Hoax.."
     };
-
-    private string currentText = ""; // Stores the full lore text
 
     void Start()
     {
@@ -26,30 +22,39 @@ public class LoreManager : MonoBehaviour
 
     IEnumerator ShowLoreText()
     {
-        foreach (string line in loreLines)
+        // Make sure we have the same number of lines as text blocks
+        if (textBlocks.Length != loreLines.Length)
         {
-            currentText += line + "\n"; // Append new line below previous ones
-            yield return StartCoroutine(FadeInText(currentText));
+            Debug.LogError("Mismatch between textBlocks and loreLines. Check the Inspector.");
+            yield break;
+        }
+
+        // Fade in each block one by one
+        for (int i = 0; i < textBlocks.Length; i++)
+        {
+            yield return StartCoroutine(FadeInText(textBlocks[i], loreLines[i]));
             yield return new WaitForSeconds(delayBetweenLines);
         }
 
-        yield return new WaitForSeconds(2f); // Short pause before scene transition
-        SceneManager.LoadScene("Main"); // Replace with your actual game scene name
+        yield return new WaitForSeconds(2f); // Small pause before transition
+        SceneManager.LoadScene("Main"); // Replace with your actual game scene
     }
 
-    IEnumerator FadeInText(string text)
+    IEnumerator FadeInText(TextMeshProUGUI textBlock, string line)
     {
-        loreText.text = text;
-        loreText.alpha = 0f;
+        textBlock.text = line; // Set the text for this block
+        textBlock.alpha = 0f;  // Start fully transparent
 
         float elapsedTime = 0f;
+
+        // Smoothly fade in the text
         while (elapsedTime < fadeDuration)
         {
-            loreText.alpha = Mathf.Lerp(0f, 1f, elapsedTime / fadeDuration);
+            textBlock.alpha = Mathf.Lerp(0f, 1f, elapsedTime / fadeDuration);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
 
-        loreText.alpha = 1f;
+        textBlock.alpha = 1f; // Ensure full visibility at the end
     }
 }

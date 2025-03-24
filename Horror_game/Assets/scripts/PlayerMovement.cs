@@ -43,7 +43,9 @@ public class PlayerMovement : MonoBehaviour
 
     public bool windowScare = false;
 
-    public bool powerBoxBroken = false;
+    public static bool powerBoxBroken = false;
+
+    public static bool powerFixed = false;
     public GameObject sparksEffect;
 
     public GameObject AllTheLights;
@@ -55,6 +57,9 @@ public class PlayerMovement : MonoBehaviour
         controller = GetComponent<CharacterController>();
         audioSource = GetComponent<AudioSource>();
         Cursor.lockState = CursorLockMode.Locked; // Lock cursor for immersive experience
+
+        // Load sensitivity value from PlayerPrefs
+        sensitivity = PlayerPrefs.GetFloat("Sensitivity", 2f);
     }
 
     void Update()
@@ -127,28 +132,29 @@ void HandleInteractionRaycast()
         }
         
         else if (hit.collider.CompareTag("PowerBox") && powerBoxBroken) // Fixing the power box
-{
-    interactionText.text = "Press [E] to fix the power box";
-
-    if (Input.GetKeyDown(KeyCode.E))
-    {
-        powerBoxBroken = false;
-        StoryText.text = "Power restored!";
-        interactionText.text = "";
-
-        // 🚨 Deactivate sparks effect
-        if (sparksEffect != null)
         {
-            sparksEffect.SetActive(false);
+            interactionText.text = "Press [E] to fix the power box";
+
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                powerBoxBroken = false;
+                powerFixed = true;
+                StoryText.text = "Power restored!";
+                interactionText.text = "";
+
+                // 🚨 Deactivate sparks effect
+                if (sparksEffect != null)
+                {
+                    sparksEffect.SetActive(false);
+                }
+
+                // 🚨 Wait 1.5 seconds and restore lights
+                StartCoroutine(RestoreLightsAfterDelay());
+            }
         }
 
-        // 🚨 Wait 1.5 seconds and restore lights
-        StartCoroutine(RestoreLightsAfterDelay());
-    }
-}
 
-
-else if (hit.collider.CompareTag("door"))
+        else if (hit.collider.CompareTag("door"))
 {
     doorBehaviour door = hit.collider.GetComponentInParent<doorBehaviour>();
 
@@ -163,6 +169,8 @@ else if (hit.collider.CompareTag("door"))
             {
                 canLockDoor = false;
                 doorLocked = false;
+                door.isLocked = false; // 🚨 Unlock the door in doorBehaviour
+                StoryText.text = "Repair The Power box";
                 interactionText.text = "";
             }
         }
@@ -173,7 +181,7 @@ else if (hit.collider.CompareTag("door"))
 
             if (Input.GetKeyDown(KeyCode.E))
             {
-                if (doorLocked == false)
+                if (!doorLocked && !door.isLocked) // 🚨 Check both variables
                 {
                     door.ToggleDoor();
                 }
@@ -187,8 +195,8 @@ else if (hit.collider.CompareTag("door"))
                 if (Input.GetKeyDown(KeyCode.F))
                 {
                     canLockDoor = false;
-                    door.ToggleLock();
                     doorLocked = true;
+                    door.isLocked = true; // 🚨 Actually lock the door
                     interactionText.text = "";
 
                     if (!windowScare)
@@ -201,9 +209,6 @@ else if (hit.collider.CompareTag("door"))
         }
     }
 }
-
-
-
 
 
         else

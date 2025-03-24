@@ -1,42 +1,24 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class SettingsMenu : MonoBehaviour
 {
     public Slider sensitivitySlider;
-    public Slider volumeSlider;
 
     void Start()
     {
-        // Load saved settings
-        sensitivitySlider.value = PlayerPrefs.GetFloat("Sensitivity", 2f);
-        volumeSlider.value = PlayerPrefs.GetFloat("Volume", 1f);
-        
-        // Apply initial values
-        UpdateSensitivity();
-        UpdateVolume();
+        // Load saved sensitivity or default to 2
+        float savedSensitivity = PlayerPrefs.GetFloat("Sensitivity", 2f);
+        sensitivitySlider.value = savedSensitivity;
+
+        // Listen to slider changes
+        sensitivitySlider.onValueChanged.AddListener(UpdateSensitivity);
     }
 
-    public void UpdateSensitivity()
+    public void UpdateSensitivity(float value)
     {
-        float sensitivity = sensitivitySlider.value;
-        PlayerPrefs.SetFloat("Sensitivity", sensitivity);
+        PlayerPrefs.SetFloat("Sensitivity", value);
         PlayerPrefs.Save();
-        Debug.Log("Sensitivity set to: " + sensitivity);
-    }
-
-    public void UpdateVolume()
-    {
-        float volume = volumeSlider.value;
-        AudioListener.volume = volume;
-        PlayerPrefs.SetFloat("Volume", volume);
-        PlayerPrefs.Save();
-        Debug.Log("Volume set to: " + volume);
-    }
-
-    public void BackToMainMenu()
-    {
-        SceneManager.LoadScene("MainMenuScene"); // Replace with your actual main menu scene name
+        Debug.Log("Sensitivity saved: " + value);
     }
 }

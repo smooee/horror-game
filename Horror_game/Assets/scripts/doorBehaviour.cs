@@ -34,6 +34,10 @@ public class doorBehaviour : MonoBehaviour
     {
         if (isMoving) return;
 
+        if (isLocked) // 🚨 This now reflects external locking
+        {
+            return;
+        }
         
         Quaternion targetRotation = isOpen ? closedRotation : 
             (reverseSwing ? Quaternion.Euler(transform.rotation.eulerAngles.x, -openYRotation, transform.rotation.eulerAngles.z) : openRotation);
