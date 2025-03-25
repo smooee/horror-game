@@ -38,7 +38,7 @@ public class PlayerMovement : MonoBehaviour
 
     public AudioSource radioAudio;
 
-    private bool canLockDoor = false; // 🚨 NEW: This controls when locking is allowed
+    public static bool canLockDoor = false; // 🚨 NEW: This controls when locking is allowed
     private bool doorLocked = false;
 
     public bool windowScare = false;
@@ -49,6 +49,8 @@ public class PlayerMovement : MonoBehaviour
     public GameObject sparksEffect;
 
     public GameObject AllTheLights;
+
+    public static bool toldToHide = false;
 
     
 
@@ -199,10 +201,15 @@ void HandleInteractionRaycast()
                     door.isLocked = true; // 🚨 Actually lock the door
                     interactionText.text = "";
 
-                    if (!windowScare)
+                    if (!windowScare && !toldToHide)
                     {
                         StoryText.text = "Get ready for bed";
                         windowScare = true;
+                    }
+
+                    if(toldToHide)
+                    {
+                        StoryText.text = "Hide in the closet";
                     }
                 }
             }

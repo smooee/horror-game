@@ -9,6 +9,7 @@ TagManager:
   - Radio
   - Battery
   - PowerBox
+  - Closet
   layers:
   - Default
   - TransparentFX
