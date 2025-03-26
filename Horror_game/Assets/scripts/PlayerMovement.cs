@@ -52,7 +52,20 @@ public class PlayerMovement : MonoBehaviour
 
     public static bool toldToHide = false;
 
-    
+    public Transform closetPosition;  // Assign the closet's inside position in Inspector
+    private bool isHiding = false;    // Tracks if the player is hiding
+
+
+    public doorBehaviour targetDoor;  // Reference to the door that opens after the music stops
+    public AudioSource doorBashAudio;        // Door bashing sound
+    public AudioSource mainMusicAudio;       // Main background music
+    public AudioSource footstepsAudio;       // Footsteps looping audio
+    public AudioSource CreatureSound;
+    public AudioSource breakingSounds;
+    public AudioSource lockerScratch;
+
+
+
 
     void Start()
     {
@@ -62,6 +75,8 @@ public class PlayerMovement : MonoBehaviour
 
         // Load sensitivity value from PlayerPrefs
         sensitivity = PlayerPrefs.GetFloat("Sensitivity", 2f);
+
+       HideInCloset();
     }
 
     void Update()
@@ -87,147 +102,221 @@ public class PlayerMovement : MonoBehaviour
         HandleFootstepAudio(Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0, Input.GetKey(KeyCode.LeftShift));
     }
 
-void HandleInteractionRaycast()
-{
-    if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, raycastDistance))
+    void HandleInteractionRaycast()
     {
-        if (hit.collider.CompareTag("Radio"))
+        if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, raycastDistance))
         {
-            if (visText) 
-            {
-                interactionText.text = "Press [E] to turn on radio";
-            }
 
-            if (Input.GetKeyDown(KeyCode.E) && visText)
+            if (hit.collider.CompareTag("Radio"))
             {
-                if (hasBattery)
+                if (visText) 
                 {
-                    StoryText.text = ""; // Clear previous story text
-                    radioAudio.Play();
-                    //StartCoroutine(TriggerMonsterRun());
-                    //StartCoroutine(DelayedFlicker());
-
-                    // 🚨 Unlock door locking feature once the radio is finished playing
-                    StartCoroutine(EnableDoorLockingAfterRadio());
-                }
-                else
-                {
-                    StoryText.text = "Missing battery. Search the shed for a battery."; 
-                }
-                interactionText.text = "";
-                visText = false;
-            }
-        }
-
-        else if (hit.collider.CompareTag("Battery")) // Battery Interaction
-        {
-            interactionText.text = "Press [E] to pick up battery";
-
-            if (Input.GetKeyDown(KeyCode.E))
-            {
-                StoryText.text = "Fix the Radio";
-                visText = true; 
-                hasBattery = true; 
-                interactionText.text = ""; 
-                hit.collider.gameObject.SetActive(false); 
-            }
-        }
-        
-        else if (hit.collider.CompareTag("PowerBox") && powerBoxBroken) // Fixing the power box
-        {
-            interactionText.text = "Press [E] to fix the power box";
-
-            if (Input.GetKeyDown(KeyCode.E))
-            {
-                powerBoxBroken = false;
-                powerFixed = true;
-                StoryText.text = "Power restored!";
-                interactionText.text = "";
-
-                // 🚨 Deactivate sparks effect
-                if (sparksEffect != null)
-                {
-                    sparksEffect.SetActive(false);
+                    interactionText.text = "Press [E] to turn on radio";
                 }
 
-                // 🚨 Wait 1.5 seconds and restore lights
-                StartCoroutine(RestoreLightsAfterDelay());
+                if (Input.GetKeyDown(KeyCode.E) && visText)
+                {
+                    if (hasBattery)
+                    {
+                        StoryText.text = ""; // Clear previous story text
+                        radioAudio.Play();
+                        //StartCoroutine(TriggerMonsterRun());
+                        //StartCoroutine(DelayedFlicker());
+
+                        // 🚨 Unlock door locking feature once the radio is finished playing
+                        StartCoroutine(EnableDoorLockingAfterRadio());
+                    }
+                    else
+                    {
+                        StoryText.text = "Missing battery. Search the shed for a battery."; 
+                    }
+                    interactionText.text = "";
+                    visText = false;
+                }
             }
-        }
+
+            else if (hit.collider.CompareTag("Closet") && doorLocked && toldToHide)
+            {
+                interactionText.text = "Press [E] to hide inside";
+
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    HideInCloset();
+                }
+            }
+
+            else if (hit.collider.CompareTag("Battery")) // Battery Interaction
+            {
+                interactionText.text = "Press [E] to pick up battery";
+
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    StoryText.text = "Fix the Radio";
+                    visText = true; 
+                    hasBattery = true; 
+                    interactionText.text = ""; 
+                    hit.collider.gameObject.SetActive(false); 
+                }
+            }
+            
+            else if (hit.collider.CompareTag("PowerBox") && powerBoxBroken) // Fixing the power box
+            {
+                interactionText.text = "Press [E] to fix the power box";
+
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    powerBoxBroken = false;
+                    powerFixed = true;
+                    StoryText.text = "Power restored!";
+                    interactionText.text = "";
+
+                    // 🚨 Deactivate sparks effect
+                    if (sparksEffect != null)
+                    {
+                        sparksEffect.SetActive(false);
+                    }
+
+                    // 🚨 Wait 1.5 seconds and restore lights
+                    StartCoroutine(RestoreLightsAfterDelay());
+                }
+            }
 
 
-        else if (hit.collider.CompareTag("door"))
-{
-    doorBehaviour door = hit.collider.GetComponentInParent<doorBehaviour>();
-
-    if (door != null)
+            else if (hit.collider.CompareTag("door"))
     {
-        // 🚪 Unlock the door ONLY AFTER flickering has finished
-        if (canLockDoor && doorLocked)
+        doorBehaviour door = hit.collider.GetComponentInParent<doorBehaviour>();
+
+        if (door != null)
         {
-            interactionText.text = "Press [F] to unlock the door";
-
-            if (Input.GetKeyDown(KeyCode.F))
+            // 🚪 Unlock the door ONLY AFTER flickering has finished
+            if (canLockDoor && doorLocked)
             {
-                canLockDoor = false;
-                doorLocked = false;
-                door.isLocked = false; // 🚨 Unlock the door in doorBehaviour
-                StoryText.text = "Repair The Power box";
-                interactionText.text = "";
-            }
-        }
-        else
-        {
-            // Normal door interaction (open/close)
-            interactionText.text = "Press [E] to open the door";
-
-            if (Input.GetKeyDown(KeyCode.E))
-            {
-                if (!doorLocked && !door.isLocked) // 🚨 Check both variables
-                {
-                    door.ToggleDoor();
-                }
-            }
-
-            // 🚪 Locking option only if the door is unlocked & closed
-            if (!doorLocked && !door.isOpen && canLockDoor)
-            {
-                interactionText.text += "\nPress [F] to LOCK the door";
+                interactionText.text = "Press [F] to unlock the door";
 
                 if (Input.GetKeyDown(KeyCode.F))
                 {
                     canLockDoor = false;
-                    doorLocked = true;
-                    door.isLocked = true; // 🚨 Actually lock the door
+                    doorLocked = false;
+                    door.isLocked = false; // 🚨 Unlock the door in doorBehaviour
+                    StoryText.text = "Repair The Power box";
                     interactionText.text = "";
+                }
+            }
+            else
+            {
+                // Normal door interaction (open/close)
+                interactionText.text = "Press [E] to open the door";
 
-                    if (!windowScare && !toldToHide)
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    if (!doorLocked && !door.isLocked) // 🚨 Check both variables
                     {
-                        StoryText.text = "Get ready for bed";
-                        windowScare = true;
+                        door.ToggleDoor();
                     }
+                }
 
-                    if(toldToHide)
+                // 🚪 Locking option only if the door is unlocked & closed
+                if (!doorLocked && !door.isOpen && canLockDoor)
+                {
+                    interactionText.text += "\nPress [F] to LOCK the door";
+
+                    if (Input.GetKeyDown(KeyCode.F))
                     {
-                        StoryText.text = "Hide in the closet";
+                        canLockDoor = false;
+                        doorLocked = true;
+                        door.isLocked = true; // 🚨 Actually lock the door
+                        interactionText.text = "";
+
+                        if (!windowScare && !toldToHide)
+                        {
+                            StoryText.text = "Get ready for bed";
+                            windowScare = true;
+                        }
+
+                        if(toldToHide)
+                        {
+                            StoryText.text = "Hide in the closet";
+                        }
                     }
                 }
             }
         }
     }
-}
 
 
+            else
+            {
+                interactionText.text = "";
+            }
+        }
         else
         {
             interactionText.text = "";
         }
     }
-    else
+
+
+    void HideInCloset()
     {
-        interactionText.text = "";
+        isHiding = true;
+        controller.enabled = false; // 🚨 Disable movement
+        transform.position = closetPosition.position; // Teleport to closet
+        StoryText.text = "You are hiding..."; // Update story
+
+        StartCoroutine(ClosetScareSequence());
     }
-}
+
+    IEnumerator ClosetScareSequence()
+    {
+        yield return new WaitForSeconds(2f); // 🚨 Wait 2 seconds
+
+        // 🚨 1. Play loud door bashing
+        if (doorBashAudio != null)
+        {
+            doorBashAudio.Play();
+        }
+
+        yield return new WaitForSeconds(doorBashAudio.clip.length); // Wait until bash finishes
+
+        yield return new WaitForSeconds(1f);
+
+        // 🚨 2. Stop the main music
+        if (mainMusicAudio != null && mainMusicAudio.isPlaying)
+        {
+            mainMusicAudio.Stop();
+
+            // 🚪 Open the door when the music stops
+            if (targetDoor != null)
+            {
+                targetDoor.isLocked = false;
+                targetDoor.ToggleDoor(); // 🚨 This opens the door
+            }
+        }
+
+        yield return new WaitForSeconds(1f); // 🚨 Small delay before footsteps
+
+        // 🚨 3. Start playing footsteps
+        if (footstepsAudio != null)
+        {
+            
+            CreatureSound.Play();
+
+            yield return new WaitForSeconds(1.5f);
+
+            footstepsAudio.Play();
+            
+            yield return new WaitForSeconds(24f);
+
+            //breakingSounds.Play();
+
+            yield return new WaitForSeconds(7f);
+
+            lockerScratch.Play();
+        }
+
+    }
+
+
 
     private void OnTriggerEnter(Collider other)
     {
@@ -239,61 +328,75 @@ void HandleInteractionRaycast()
         }
     }
 
-// 🚨 New Coroutine: Unlocks door locking after the radio plays
-IEnumerator EnableDoorLockingAfterRadio()
-{
-    yield return new WaitForSeconds(radioAudio.clip.length); // Wait for the radio to finish
-    canLockDoor = true;
-    StoryText.text = "Lock the door"; // Prompt player to lock the door
-}
-
-
-IEnumerator RestoreLightsAfterDelay()
-{
-    yield return new WaitForSeconds(1.5f);
-    AllTheLights.SetActive(true);
-}
-
-    IEnumerator LockDoorsTask()
+    // 🚨 New Coroutine: Unlocks door locking after the radio plays
+    IEnumerator EnableDoorLockingAfterRadio()
     {
-        yield return new WaitForSeconds(2f); // Small delay for realism
-        StoryText.text = "Lock the doors before going to bed";
+        yield return new WaitForSeconds(radioAudio.clip.length); // Wait for the radio to finish
+        canLockDoor = true;
+        StoryText.text = "Lock the door"; // Prompt player to lock the door
     }
 
-    IEnumerator TriggerMonsterRun()
-    {
-        yield return new WaitForSeconds(0.5f); // Wait 2 seconds
 
-        monsterObject.SetActive(true); // Make monster visible
-        monsterAnimator.SetTrigger("RunAcross"); // Play running animation
-        monsterObject.GetComponent<MonsterMovement>().StartRunning(); // Start movement
+    IEnumerator RestoreLightsAfterDelay()
+    {
+        yield return new WaitForSeconds(1.5f);
+        AllTheLights.SetActive(true);
     }
 
-    
-    IEnumerator DelayedFlicker()
-{
-    yield return new WaitForSeconds(7f); // Wait before triggering the event
+        IEnumerator LockDoorsTask()
+        {
+            yield return new WaitForSeconds(2f); // Small delay for realism
+            StoryText.text = "Lock the doors before going to bed";
+        }
 
-    if (electricBoxAudio != null)
+        IEnumerator TriggerMonsterRun()
+        {
+            yield return new WaitForSeconds(0.5f); // Wait 2 seconds
+
+            monsterObject.SetActive(true); // Make monster visible
+            monsterAnimator.SetTrigger("RunAcross"); // Play running animation
+            monsterObject.GetComponent<MonsterMovement>().StartRunning(); // Start movement
+        }
+
+        
+        IEnumerator DelayedFlicker()
+        {
+            yield return new WaitForSeconds(7f); // Wait before triggering the event
+
+            if (electricBoxAudio != null)
+            {
+                electricBoxAudio.Play(); // Play power-off sound
+            }
+
+            yield return new WaitForSeconds(5f); // Wait before blackout
+
+            StoryText.text = "Turn on flashlight [T]";
+
+
+            sparksEffect.SetActive(true);
+            powerBoxBroken = true;
+
+            FindObjectOfType<LightsFlicker>().StartFlickerSequence();
+
+            yield return new WaitForSeconds(2f); // 🚨 Short delay before unlocking door
+
+            // 🚨 Now the door can be unlocked
+            canLockDoor = true; 
+
+            StartCoroutine(WaitForFlashlightInput());
+        }
+
+    IEnumerator WaitForFlashlightInput()
     {
-        electricBoxAudio.Play(); // Play power-off sound
+        // 🚨 Wait until player presses "T"
+        while (!Input.GetKeyDown(KeyCode.T))
+        {
+            yield return null; // Keep waiting until "T" is pressed
+        }
+
+        // 🚨 Once "T" is pressed, update the story
+        StoryText.text = "The power is out... Fix the lights outside.";
     }
-
-    yield return new WaitForSeconds(5f); // Wait before blackout
-
-    StoryText.text = "Turn on flashlight [T]";
-
-    sparksEffect.SetActive(true);
-    powerBoxBroken = true;
-
-    FindObjectOfType<LightsFlicker>().StartFlickerSequence();
-
-    yield return new WaitForSeconds(2f); // 🚨 Short delay before unlocking door
-
-    // 🚨 Now the door can be unlocked
-    canLockDoor = true; 
-}
-
 
 
     void HandleMovement()
