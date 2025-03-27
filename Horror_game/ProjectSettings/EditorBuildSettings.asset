@@ -17,4 +17,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/LoreScene.unity
     guid: e5a0517c0e54fc14c95bfae5979a4957
+  - enabled: 1
+    path: Assets/Scenes/EndScene.unity
+    guid: 625631ecab3b6ce47a214e1f2a15f724
   m_configObjects: {}

@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 
 public class PlayerMovement : MonoBehaviour
@@ -64,6 +65,11 @@ public class PlayerMovement : MonoBehaviour
     public AudioSource breakingSounds;
     public AudioSource lockerScratch;
 
+    public GameObject lockerDoor;             // The locker door to animate
+    public GameObject crawler;                // The crawler GameObject
+    public float doorOpenSpeed = 0.04f;          // Speed of door opening
+    private bool canPeek = false;             // Can player peek?
+    public AudioSource attackSound;
 
 
 
@@ -96,6 +102,13 @@ public class PlayerMovement : MonoBehaviour
         {
             StartCoroutine(TriggerMonsterRun());
         }    
+
+        if (canPeek && Input.GetKeyDown(KeyCode.E))
+        {
+            StartCoroutine(PeekFromCloset());
+            canPeek = false; // Prevent multiple triggers
+            crawler.SetActive(true);
+        }
 
 
         // Handle footstep audio
@@ -183,66 +196,65 @@ public class PlayerMovement : MonoBehaviour
 
 
             else if (hit.collider.CompareTag("door"))
-    {
-        doorBehaviour door = hit.collider.GetComponentInParent<doorBehaviour>();
-
-        if (door != null)
-        {
-            // 🚪 Unlock the door ONLY AFTER flickering has finished
-            if (canLockDoor && doorLocked)
             {
-                interactionText.text = "Press [F] to unlock the door";
+                doorBehaviour door = hit.collider.GetComponentInParent<doorBehaviour>();
 
-                if (Input.GetKeyDown(KeyCode.F))
+                if (door != null)
                 {
-                    canLockDoor = false;
-                    doorLocked = false;
-                    door.isLocked = false; // 🚨 Unlock the door in doorBehaviour
-                    StoryText.text = "Repair The Power box";
-                    interactionText.text = "";
-                }
-            }
-            else
-            {
-                // Normal door interaction (open/close)
-                interactionText.text = "Press [E] to open the door";
-
-                if (Input.GetKeyDown(KeyCode.E))
-                {
-                    if (!doorLocked && !door.isLocked) // 🚨 Check both variables
+                    // 🚪 Unlock the door ONLY AFTER flickering has finished
+                    if (canLockDoor && doorLocked)
                     {
-                        door.ToggleDoor();
-                    }
-                }
+                        interactionText.text = "Press [F] to unlock the door";
 
-                // 🚪 Locking option only if the door is unlocked & closed
-                if (!doorLocked && !door.isOpen && canLockDoor)
-                {
-                    interactionText.text += "\nPress [F] to LOCK the door";
-
-                    if (Input.GetKeyDown(KeyCode.F))
-                    {
-                        canLockDoor = false;
-                        doorLocked = true;
-                        door.isLocked = true; // 🚨 Actually lock the door
-                        interactionText.text = "";
-
-                        if (!windowScare && !toldToHide)
+                        if (Input.GetKeyDown(KeyCode.F))
                         {
-                            StoryText.text = "Get ready for bed";
-                            windowScare = true;
-                        }
-
-                        if(toldToHide)
-                        {
-                            StoryText.text = "Hide in the closet";
+                            canLockDoor = false;
+                            doorLocked = false;
+                            door.isLocked = false; // 🚨 Unlock the door in doorBehaviour
+                            StoryText.text = "Repair The Power box";
+                            interactionText.text = "";
                         }
                     }
+                    else
+                    {
+                        // Normal door interaction (open/close)
+                        interactionText.text = "Press [E] to open the door";
+
+                        if (Input.GetKeyDown(KeyCode.E))
+                        {
+                            if (!doorLocked && !door.isLocked) // 🚨 Check both variables
+                            {
+                                door.ToggleDoor();
+                            }
+                        }
+
+                        // 🚪 Locking option only if the door is unlocked & closed
+                        if (!doorLocked && !door.isOpen && canLockDoor)
+                        {
+                            interactionText.text += "\nPress [F] to LOCK the door";
+
+                            if (Input.GetKeyDown(KeyCode.F))
+                            {
+                                canLockDoor = false;
+                                doorLocked = true;
+                                door.isLocked = true; // 🚨 Actually lock the door
+                                interactionText.text = "";
+
+                                if (!windowScare && !toldToHide)
+                                {
+                                    StoryText.text = "Get ready for bed";
+                                    windowScare = true;
+                                }
+
+                                if(toldToHide)
+                                {
+                                    StoryText.text = "Hide in the closet";
+                                }
+                            }
+                        }
+                    }
                 }
             }
-        }
-    }
-
 
             else
             {
@@ -264,10 +276,14 @@ public class PlayerMovement : MonoBehaviour
         StoryText.text = "You are hiding..."; // Update story
 
         StartCoroutine(ClosetScareSequence());
+
+        AllTheLights.SetActive(false);
     }
 
     IEnumerator ClosetScareSequence()
     {
+        canPeek = true;
+
         yield return new WaitForSeconds(2f); // 🚨 Wait 2 seconds
 
         // 🚨 1. Play loud door bashing
@@ -276,46 +292,71 @@ public class PlayerMovement : MonoBehaviour
             doorBashAudio.Play();
         }
 
-        yield return new WaitForSeconds(doorBashAudio.clip.length); // Wait until bash finishes
+        yield return new WaitForSeconds(doorBashAudio.clip.length);
 
         yield return new WaitForSeconds(1f);
 
-        // 🚨 2. Stop the main music
+        // 🚨 2. Stop the main music and open the door
         if (mainMusicAudio != null && mainMusicAudio.isPlaying)
         {
             mainMusicAudio.Stop();
 
-            // 🚪 Open the door when the music stops
             if (targetDoor != null)
             {
                 targetDoor.isLocked = false;
-                targetDoor.ToggleDoor(); // 🚨 This opens the door
+                targetDoor.ToggleDoor(); // 🚨 Opens door when music stops
             }
         }
 
-        yield return new WaitForSeconds(1f); // 🚨 Small delay before footsteps
-
+        yield return new WaitForSeconds(1f);
+       
         // 🚨 3. Start playing footsteps
         if (footstepsAudio != null)
         {
-            
             CreatureSound.Play();
-
             yield return new WaitForSeconds(1.5f);
 
             footstepsAudio.Play();
-            
             yield return new WaitForSeconds(24f);
 
-            //breakingSounds.Play();
-
-            yield return new WaitForSeconds(7f);
-
-            lockerScratch.Play();
+            lockerScratch.Play();  // Play locker scratching
         }
 
+        yield return new WaitForSeconds(3f);  // 🚨 Wait 3 seconds
+
+        // 🚨 4. Cut off all sounds
+        if (CreatureSound.isPlaying) CreatureSound.Stop();
+        if (footstepsAudio.isPlaying) footstepsAudio.Stop();
+        if (lockerScratch.isPlaying) lockerScratch.Stop();
+
+        StoryText.text = "Press [E] to Peek";
+        canPeek = true;  // 🚨 Allow peeking
     }
 
+    IEnumerator PeekFromCloset()
+    {
+        float currentAngle = 0f;
+        float targetAngle = 20f;  // Open to 90 degrees
+        float speed = doorOpenSpeed;
+
+        // 🚨 Slowly open the locker door
+        while (currentAngle < targetAngle)
+        {
+            currentAngle += speed * Time.deltaTime * 50f;
+            lockerDoor.transform.localRotation = Quaternion.Euler(0, currentAngle, 0);
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(2f);
+
+        attackSound.Play();
+
+        yield return new WaitForSeconds(1.5f);
+
+        SceneManager.LoadScene("EndScene");
+
+        yield return null;
+    }
 
 
     private void OnTriggerEnter(Collider other)
