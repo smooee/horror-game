@@ -82,7 +82,7 @@ public class PlayerMovement : MonoBehaviour
         // Load sensitivity value from PlayerPrefs
         sensitivity = PlayerPrefs.GetFloat("Sensitivity", 2f);
 
-       HideInCloset();
+       //HideInCloset();
     }
 
     void Update()
@@ -282,7 +282,7 @@ public class PlayerMovement : MonoBehaviour
 
     IEnumerator ClosetScareSequence()
     {
-        canPeek = true;
+        
 
         yield return new WaitForSeconds(2f); // 🚨 Wait 2 seconds
 
